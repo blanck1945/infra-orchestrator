@@ -18,7 +18,7 @@ RUN pnpm install --frozen-lockfile
 COPY . .
 
 # Construimos el proyecto NestJS
-RUN pnpm run build
+RUN NODE_OPTIONS="--max-old-space-size=2048" pnpm run build
 
 # Exponemos el puerto
 EXPOSE 3000
