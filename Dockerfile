@@ -1,27 +1,29 @@
-# Usamos Node 20 sobre base Alpine
-FROM node:20-alpine
+# 1. Etapa de Construcción (Build)
+FROM node:20-alpine AS builder
 
-# Instalamos pnpm globalmente y dependencias de sistema
 RUN corepack enable && corepack prepare pnpm@latest --activate
-RUN apk add --no-cache libc6-compat git
+RUN apk add --no-cache libc6-compat
 
 WORKDIR /app
 
-# Copiamos los archivos de definición de dependencias
 COPY pnpm-lock.yaml package.json ./
-
-# Instalamos las dependencias usando pnpm
-# --frozen-lockfile asegura que usemos las versiones exactas del lock
 RUN pnpm install --frozen-lockfile
 
-# Copiamos el resto del código
 COPY . .
-
-# Construimos el proyecto NestJS
+# Aumentamos memoria para el build (vital para tu t3.micro)
 RUN NODE_OPTIONS="--max-old-space-size=2048" pnpm run build
 
-# Exponemos el puerto
+# 2. Etapa de Producción (Mucho más ligera)
+FROM node:20-alpine
+WORKDIR /app
+
+# Solo copiamos lo necesario para ejecutar
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./
+
+# Exponemos puerto
 EXPOSE 3000
 
-# Comando para arrancar la app
-CMD ["pnpm", "run", "start:prod"]
+# Ejecutamos directamente con Node (ahorra RAM y evita problemas de procesos)
+CMD ["node", "dist/main.js"]
