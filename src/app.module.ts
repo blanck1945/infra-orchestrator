@@ -4,6 +4,8 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ProjectsModule } from './projects/projects.module';
 import { InfraModule } from './infra/infra.module';
+import { NginxModule } from './nginx/nginx.module';
+import { DeployModule } from './deploy/deploy.module';
 
 @Module({
   imports: [
@@ -13,6 +15,8 @@ import { InfraModule } from './infra/infra.module';
     }),
     ProjectsModule,
     InfraModule,
+    NginxModule,
+    DeployModule,
   ],
   controllers: [AppController],
   providers: [AppService],

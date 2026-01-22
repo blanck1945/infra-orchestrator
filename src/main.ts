@@ -27,6 +27,15 @@ async function bootstrap() {
     .setDescription('API para gestionar proyectos de infraestructura con Pulumi, AWS y GitHub')
     .setVersion('1.0')
     .addTag('projects', 'Endpoints relacionados con la gestión de proyectos')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'Token',
+        description: 'Ingresa tu ORCHESTRATOR_TOKEN',
+      },
+      'bearer', // Este es el nombre que se usa en @ApiBearerAuth('bearer')
+    )
     .build();
   
   const document = SwaggerModule.createDocument(app, config);
