@@ -186,9 +186,9 @@ export class GithubService {
       
       this.logger.log(`Creando repositorio desde template: ${templateOwner}/${templateRepo}`);
       
-      // Determinar el owner (organización o usuario)
-      const { data: authenticatedUser } = await this.octokit.users.getAuthenticated();
-      const owner = githubOrg || authenticatedUser.login;
+      // Determinar el owner: usar host-repositories por defecto, o GITHUB_ORG si está configurado
+      const defaultOrg = 'host-repositories';
+      const owner = githubOrg || defaultOrg;
       
       let repo;
       try {

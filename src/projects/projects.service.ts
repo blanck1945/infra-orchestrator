@@ -21,7 +21,8 @@ export class ProjectsService {
     const githubToken = this.configService.get('GITHUB_TOKEN');
     const templateOwner = this.configService.get('GITHUB_TEMPLATE_OWNER');
     const templateRepo = this.configService.get('GITHUB_TEMPLATE_REPO');
-    const githubOrg = this.configService.get('GITHUB_ORG') || templateOwner;
+    const defaultOrg = 'host-repositories';
+    const githubOrg = this.configService.get('GITHUB_ORG') || defaultOrg;
 
     // Validar que las variables estén configuradas
     if (!templateOwner || templateOwner === 'tu-organizacion') {
@@ -66,10 +67,9 @@ export class ProjectsService {
         throw new Error('vite.config.ts no encontrado o no es un archivo');
       }
 
-      const fileContent = Buffer.from(viteConfigResponse.data.content, 'base64').toString('utf-8');
       const fileSha = viteConfigResponse.data.sha;
 
-      // 4. Modificar el nombre del remote en Module Federation
+      // 4. Generar el contenido completo del vite.config.ts con Module Federation
       // Sanitizar el nombre: solo minúsculas, números y guiones
       const sanitizedProjectName = projectName
         .toLowerCase()
@@ -79,16 +79,39 @@ export class ProjectsService {
 
       const remoteName = sanitizedProjectName;
 
-      // REEMPLAZO MÁGICO: Buscar específicamente "remote-seed" y reemplazarlo
-      const updatedContent = fileContent.replace(
-        /name:\s*"remote-seed"/,
-        `name: "${remoteName}"`,
-      );
+      // Generar el contenido completo del vite.config.ts
+      const finalContent = `import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
+import federation from "@originjs/vite-plugin-federation";
 
-      // Si no encontró con comillas dobles, intentar con comillas simples
-      const finalContent = updatedContent.includes(`name: "${remoteName}"`)
-        ? updatedContent
-        : fileContent.replace(/name:\s*'remote-seed'/, `name: '${remoteName}'`);
+// https://vite.dev/config/
+export default defineConfig({
+  plugins: [react(), tailwindcss(), federation({
+    name: "${remoteName}",
+    filename: "remoteEntry.js",
+    exposes: {
+      "./App": "./src/App",
+    },
+    shared: {
+      react: {
+        singleton: true,
+        requiredVersion: false,
+      },
+      "react-dom": {
+        singleton: true,
+        requiredVersion: false,
+      },
+    },
+  })],
+  build: {
+    target: "esnext",
+    minify: false,
+    cssCodeSplit: false,
+    modulePreload: false,
+  },
+});
+`;
 
       // 5. Hacer commit del cambio
       this.logger.log(`Actualizando vite.config.ts con remote name: ${remoteName}...`);
@@ -117,7 +140,8 @@ export class ProjectsService {
   async createAmplifyApp(projectName: string, createS3: boolean = false) {
     const githubToken = this.configService.get('GITHUB_TOKEN');
     const templateOwner = this.configService.get('GITHUB_TEMPLATE_OWNER');
-    const githubOrg = this.configService.get('GITHUB_ORG') || templateOwner;
+    const defaultOrg = 'host-repositories';
+    const githubOrg = this.configService.get('GITHUB_ORG') || defaultOrg;
 
     // Validar que el repositorio existe antes de crear Amplify
     const octokit = new Octokit({ auth: githubToken });
